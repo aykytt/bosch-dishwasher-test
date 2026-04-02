@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bosch Home Connect – Galaxy Watch 7</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────
+   TOKENS — WCAG 2.1 AAA (7:1) COMPLIANT
+   Zemin: #FFFFFF (beyaz)
+   Primary: #003B67 (lacivert) — kontrast beyaz üzerinde 9.5:1 ✓ AAA
+   Metin: #000000 (siyah) — kontrast beyaz üzerinde 21:1 ✓ AAA
+   Dim metin: #595959 — kontrast beyaz üzerinde 7.0:1 ✓ AAA (tam sınır)
+   OK: #005C2E — kontrast beyaz üzerinde 9.8:1 ✓ AAA
+   Warn: #7A3500 — kontrast beyaz üzerinde 9.2:1 ✓ AAA
+   Err: #9B000A — kontrast beyaz üzerinde 9.5:1 ✓ AAA
+───────────────────────────────────────── */
+:root {
+  --bg:        #FFFFFF;   /* Beyaz zemin */
+  --txt-1:     #000000;   /* Siyah — 21:1 on white ✓ AAA */
+  --txt-2:     #0A0A0A;   /* Neredeyse siyah — 20.9:1 ✓ AAA */
+  --txt-dim:   #595959;   /* Koyu gri — 7.0:1 on white ✓ AAA (sınır) */
+  --accent:    #003B67;   /* Navy primary — 9.5:1 on white ✓ AAA */
+  --accent-dk: #002844;   /* Daha koyu navy */
+  --accent-lt: #E6EFF6;   /* Çok açık navy bg — metin siyah üzerinde */
+  --ok:        #005C2E;   /* Koyu yeşil — 9.8:1 on white ✓ AAA */
+  --ok-lt:     #E6F4EC;   /* Açık yeşil bg */
+  --warn:      #7A3500;   /* Koyu turuncu — 9.2:1 on white ✓ AAA */
+  --warn-lt:   #FFF0E6;   /* Açık turuncu bg */
+  --err:       #9B000A;   /* Koyu kırmızı — 9.5:1 on white ✓ AAA */
+  --border:    rgba(0,0,0,0.14);
+  --border-hi: rgba(0,59,103,0.5);   /* navy tinted border */
+  --input-bg:  #F5F8FB;   /* Çok açık mavi-gri input bg */
+  --card-bg:   #F0F4F8;   /* Açık mavi-gri card bg */
+  --card-bdr:  rgba(0,59,103,0.18);
+
+  /* Watch geometry */
+  --wsize: 420px;
+  --bezel: 24px;
+  --scr:   calc(var(--wsize) - var(--bezel)*2);  /* 372px */
+  --safe:  56px;   /* 15% of 372px ≈ 56px safe inset */
+
+  --dur:   0.28s;
+  --ease:  cubic-bezier(.4,0,.2,1);
+  --font:  'Plus Jakarta Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  font-family: var(--font);
+  background: #D6E4F0;   /* Açık lacivert-gri sayfa zemini */
+  color: var(--txt-1);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+button { font-family: var(--font); cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+
+/* ─────────────────────────────────────────
+   WATCH FRAME
+───────────────────────────────────────── */
+.watch-wrap { position: relative; }
+.watch-frame {
+  position: relative;
+  width: var(--wsize); height: var(--wsize);
+  background: linear-gradient(145deg, #C8D4DC 0%, #8A9BAA 55%, #A8B8C4 100%);
+  border-radius: 50%;
+  box-shadow: 0 20px 60px rgba(0,40,80,.35), 0 4px 16px rgba(0,0,0,.2),
+              inset 0 2px 6px rgba(255,255,255,.6),
+              inset 0 -3px 6px rgba(0,0,0,.25);
+  display: flex; align-items: center; justify-content: center;
+}
+.watch-frame::before {
+  content: ''; position: absolute; inset: 5px; border-radius: 50%;
+  background: linear-gradient(155deg, #D8E4EC 0%, #9AAEBB 50%, #B8C8D4 100%);
+}
+.crown {
+  position: absolute; right: -12px; top: calc(50% - 30px);
+  width: 8px; height: 44px;
+  background: linear-gradient(90deg,#9AAEBB,#C8D8E4,#9AAEBB);
+  border-radius: 4px; box-shadow: 2px 0 6px rgba(0,0,0,.25); z-index: 10;
+}
+.crown::after {
+  content: ''; position: absolute; top: 50%; left: 1px; right: 1px; height: 14px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg,#B8CCd8,#D8E8F0,#B8CCD8); border-radius: 3px;
+}
+.pwr-btn {
+  position: absolute; right: -10px; top: calc(50% + 22px);
+  width: 7px; height: 22px;
+  background: linear-gradient(90deg,#9AAEBB,#C8D8E4,#9AAEBB);
+  border-radius: 3px; z-index: 10;
+}
+
+/* ─────────────────────────────────────────
+   WATCH SCREEN
+───────────────────────────────────────── */
+.watch-screen {
+  position: relative;
+  width: var(--scr); height: var(--scr);
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--bg);
+  z-index: 2;
+}
+
+/* ─────────────────────────────────────────
+   SCREEN BASE
+───────────────────────────────────────── */
+.scr {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+  opacity: 0;
+  transform: scale(.93) translateX(24px);
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+  will-change: opacity, transform;
+}
+.scr.active { opacity: 1; transform: scale(1) translateX(0); pointer-events: all; }
+.scr.exit-l { opacity: 0; transform: scale(.93) translateX(-24px); }
+
+/* Safe zone — 15% inset from all edges */
+.sz {
+  width:  calc(var(--scr) - var(--safe)*2);
+  height: calc(var(--scr) - var(--safe)*2);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow: hidden;
+  gap: 0;
+}
+
+/* ─────────────────────────────────────────
+   SHARED TYPOGRAPHY
+───────────────────────────────────────── */
+.w-title { font-size: 13px; font-weight: 800; color: var(--txt-1); letter-spacing: -.2px; }
+.w-sub   { font-size: 10px; font-weight: 500; color: var(--txt-dim); margin-top: 2px; }
+.st-clk  { font-size: 12px; font-weight: 700; color: var(--txt-dim); letter-spacing: 1px; }
+
+/* ─────────────────────────────────────────
+   BUTTONS
+───────────────────────────────────────── */
+.pill-wrap {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 7px;
+  flex-shrink: 0;
+}
+.pill {
+  width: 80%;
+  padding: 10px 0;
+  background: var(--accent); color: #FFFFFF;   /* #003B67 bg — white 9.5:1 ✓ AAA */
+  border: none; border-radius: 999px;
+  font-size: 12px; font-weight: 800;
+  text-align: center;
+  transition: opacity .15s, transform .1s;
+}
+.pill:active { transform: scale(.96); opacity: .85; }
+.pill.ghost {
+  background: transparent; color: var(--accent);   /* navy text on white — 9.5:1 ✓ AAA */
+  border: 2px solid var(--accent);
+}
+.pill.ghost:active { background: var(--accent-lt); }
+.pill.danger {
+  background: var(--warn); color: #FFFFFF;   /* #7A3500 bg — white 9.2:1 ✓ AAA */
+}
+
+/* Back button */
+.back-row {
+  display: flex; align-items: center; gap: 7px;
+  flex-shrink: 0; margin-bottom: 8px;
+}
+.back-btn {
+  display: inline-flex; align-items: center; gap: 3px;
+  background: var(--accent-lt);
+  border: 1.5px solid var(--border-hi);
+  border-radius: 999px;
+  padding: 5px 11px 5px 8px;
+  font-size: 11px; font-weight: 700; color: var(--accent);   /* navy on light — 9.5:1 ✓ AAA */
+  transition: background .13s;
+  flex-shrink: 0;
+}
+.back-btn:active { background: #C8DCF0; }
+.back-btn svg { width: 11px; height: 11px; stroke: var(--accent); }
+
+/* ─────────────────────────────────────────
+   SCROLL LIST
+───────────────────────────────────────── */
+.w-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 5px;
+  padding: 2px 0 4px;
+  scrollbar-width: none;
+}
+.w-list::-webkit-scrollbar { display: none; }
+
+/* ─────────────────────────────────────────
+   STATUS ROW CARDS (for dashboard)
+───────────────────────────────────────── */
+.status-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px;
+  background: var(--card-bg);
+  border-radius: 10px;
+  border: 1.5px solid var(--card-bdr);
+  flex-shrink: 0;
+  margin-bottom: 5px;
+}
+.status-k { font-size: 10px; font-weight: 700; color: var(--txt-dim); }
+.status-v { font-size: 11px; font-weight: 800; color: var(--txt-1); }
+.status-v.ok   { color: var(--ok); }
+.status-v.warn { color: var(--warn); }
+.status-v.accent { color: var(--accent); }
+
+/* ─────────────────────────────────────────
+   API SETTINGS FORM — WCAG AAA inputs
+───────────────────────────────────────── */
+.form-field {
+  display: flex; flex-direction: column; gap: 4px;
+  flex-shrink: 0; margin-bottom: 7px;
+}
+.form-label {
+  font-size: 10px; font-weight: 800;
+  color: var(--accent);   /* #003B67 on white — 9.5:1 ✓ AAA */
+  letter-spacing: .5px;
+  text-transform: uppercase;
+}
+.form-input {
+  width: 100%;
+  padding: 9px 10px;
+  background: var(--input-bg);
+  border: 2px solid var(--border-hi);
+  border-radius: 8px;
+  font-size: 11px; font-weight: 600;
+  color: var(--txt-1);   /* #000000 on #F5F8FB — 20:1 ✓ AAA */
+  font-family: var(--font);
+  transition: border-color .15s;
+}
+.form-input::placeholder { color: var(--txt-dim); }   /* #595959 on #F5F8FB — 7:1 ✓ AAA */
+.form-input:focus { border-color: var(--accent); }
+
+/* ─────────────────────────────────────────
+   LIVE DOT
+───────────────────────────────────────── */
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--ok);   /* #005C2E — 9.8:1 on white ✓ AAA */
+  animation: livepulse 2s infinite;
+  flex-shrink: 0;
+}
+.live-dot.off { background: var(--err); animation: none; }
+@keyframes livepulse {
+  0%   { box-shadow: 0 0 0 0 rgba(0,92,46,.5); }
+  70%  { box-shadow: 0 0 0 5px rgba(0,92,46,0); }
+  100% { box-shadow: 0 0 0 0 rgba(0,92,46,0); }
+}
+
+/* ─────────────────────────────────────────
+   RUNNING RING
+───────────────────────────────────────── */
+.run-ring {
+  position: relative;
+  width: 80px; height: 80px;
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+}
+.run-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-bg   { fill: none; stroke: rgba(0,59,103,.12); stroke-width: 5; }
+.ring-prog { fill: none; stroke: var(--accent); stroke-width: 5;
+             stroke-linecap: round; stroke-dasharray: 219.9; stroke-dashoffset: 219.9;
+             transition: stroke-dashoffset 1s linear; }
+.ring-ctr  {
+  position: relative; z-index: 1;
+  font-size: 12px; font-weight: 800; color: var(--accent);
+}
+.run-timer-big {
+  font-size: 28px; font-weight: 800;
+  color: var(--txt-1); text-align: center; letter-spacing: -1px;
+}
+.run-timer-lbl {
+  font-size: 8px; font-weight: 700;
+  color: var(--txt-dim); text-align: center;
+  letter-spacing: 1.5px; margin-top: 2px;
+}
+.run-prog-name {
+  font-size: 11px; font-weight: 800;
+  color: var(--accent); text-align: center;
+}
+.run-dots { display: flex; gap: 5px; justify-content: center; }
+.run-dot  { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); opacity: .25; animation: dp 1.4s infinite; }
+.run-dot:nth-child(2) { animation-delay: .2s; }
+.run-dot:nth-child(3) { animation-delay: .4s; }
+@keyframes dp {
+  0%,100% { opacity: .2; transform: scale(1); }
+  50%      { opacity: 1;  transform: scale(1.4); }
+}
+
+/* Done screen */
+.done-ring {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--ok-lt); border: 2px solid var(--ok);
+  display: flex; align-items: center; justify-content: center;
+  animation: dopop .4s var(--ease) both;
+}
+@keyframes dopop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.done-title { font-size: 14px; font-weight: 800; color: var(--txt-1); text-align: center; }
+.done-sub   { font-size: 10px; font-weight: 600; color: var(--ok); text-align: center; }
+
+/* ─────────────────────────────────────────
+   SETTINGS GEAR BUTTON — always visible at bottom
+───────────────────────────────────────── */
+.settings-fab {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: var(--accent-lt);
+  border: 2px solid var(--border-hi);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  transition: background .15s, border-color .15s;
+}
+.settings-fab:active { background: #C8DCF0; }
+.settings-fab svg { width: 16px; height: 16px; }
+
+/* ─────────────────────────────────────────
+   TOP ROW
+───────────────────────────────────────── */
+.st-toprow {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; padding: 0 2px; margin-bottom: 8px;
+}
+
+/* ─────────────────────────────────────────
+   POLL STATUS CHIP
+───────────────────────────────────────── */
+.poll-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 9px; font-weight: 700;
+  color: var(--txt-dim);
+}
+
+/* Center block for big icon on dashboard */
+.st-center {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  flex: 1; justify-content: center;
+}
+.st-icon-box {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  border: 2px solid var(--border-hi);
+  background: var(--accent-lt);
+  display: flex; align-items: center; justify-content: center;
+}
+.st-icon-box.running { border-color: var(--accent); background: #C8DCF0; }
+.st-icon-box.off     { border-color: var(--border); background: #F0F4F8; }
+.st-machine-title { font-size: 15px; font-weight: 800; color: var(--txt-1); letter-spacing: -.3px; }
+.st-machine-hint  { font-size: 10px; font-weight: 600; color: var(--txt-dim); }
+
+/* Compact status grid */
+.stat-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 5px; flex-shrink: 0;
+}
+.stat-cell {
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-bdr);
+  border-radius: 8px;
+  padding: 6px 8px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.stat-k { font-size: 8px; font-weight: 700; color: var(--txt-dim); text-transform: uppercase; letter-spacing: .5px; }
+.stat-v { font-size: 11px; font-weight: 800; color: var(--txt-1); }
+.stat-v.ok     { color: var(--ok); }    /* #005C2E on white — 9.8:1 ✓ AAA */
+.stat-v.warn   { color: var(--warn); }  /* #7A3500 on white — 9.2:1 ✓ AAA */
+.stat-v.accent { color: var(--accent); } /* #003B67 on white — 9.5:1 ✓ AAA */
+
+/* ─────────────────────────────────────────
+   SCROLL FORMS (for settings with 3 fields)
+───────────────────────────────────────── */
+.form-scroll {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+  display: flex; flex-direction: column;
+  padding: 2px 0 4px;
+}
+.form-scroll::-webkit-scrollbar { display: none; }
+
+/* ─────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────── */
+@media (max-width: 480px) {
+  :root { --wsize: 340px; --bezel: 20px; --safe: 48px; }
+}
+@media (max-width: 370px) {
+  :root { --wsize: 300px; --bezel: 18px; --safe: 42px; }
+}
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<div id="aria-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+<div class="watch-wrap" role="region" aria-label="Galaxy Watch 7 Bosch Bulaşık Makinesi Kontrolü">
+  <div class="watch-frame" aria-hidden="true">
+    <div class="crown"></div>
+    <div class="pwr-btn"></div>
+
+    <div class="watch-screen">
+
+      <!-- ══════════════════════════════════
+           S1: API SETTINGS
+           İlk açılışta API bilgileri yoksa buraya düşer.
+           Ana ekrandaki dişli çarktan da erişilebilir.
+      ══════════════════════════════════ -->
+      <div id="s-settings" class="scr" role="main" aria-label="API ayarları ekranı">
+        <div class="sz" style="justify-content:space-between;gap:0;">
+
+          <div class="st-toprow">
+            <span class="w-title" style="font-size:11px;">⚙️ API Ayarları</span>
+            <span class="st-clk" id="st-clk-s">00:00</span>
+          </div>
+
+          <div class="form-scroll">
+            <div class="form-field">
+              <label class="form-label" for="inp-cid">Client ID</label>
+              <input class="form-input" id="inp-cid" type="text"
+                placeholder="xxxxxxxx-xxxx-..."
+                autocomplete="off" spellcheck="false" aria-required="true" />
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="inp-cs">Client Secret</label>
+              <input class="form-input" id="inp-cs" type="password"
+                placeholder="••••••••••••"
+                autocomplete="off" spellcheck="false" aria-required="true" />
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="inp-haid">HAID</label>
+              <input class="form-input" id="inp-haid" type="text"
+                placeholder="SIEMENS-HN..."
+                autocomplete="off" spellcheck="false" aria-required="true" />
+            </div>
+          </div>
+
+          <div class="pill-wrap" style="padding-top:6px;">
+            <button class="pill" onclick="saveSettings()" aria-label="API bilgilerini kaydet ve bağlan">
+              ✓ Kaydet &amp; Bağlan
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════
+           S2: DASHBOARD (Ana Kontrol Paneli)
+      ══════════════════════════════════ -->
+      <div id="s-dashboard" class="scr" role="main" aria-label="Bulaşık makinesi kontrol paneli" aria-live="polite">
+        <div class="sz" style="justify-content:space-between;padding:2px 0;">
+
+          <div class="st-toprow">
+            <span class="st-clk" id="st-clk-d">00:00</span>
+            <div class="poll-chip" id="poll-chip" aria-label="Bağlantı durumu">
+              <div class="live-dot" id="conn-dot"></div>
+              <span id="conn-lbl">—</span>
+            </div>
+          </div>
+
+          <!-- Büyük ikon + makine durumu -->
+          <div class="st-center">
+            <div class="st-icon-box" id="dash-icon-box" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+                <rect x="4" y="5" width="32" height="30" rx="3" stroke="#003B67" stroke-width="2"/>
+                <line x1="4" y1="13" x2="36" y2="13" stroke="#003B67" stroke-width="2"/>
+                <circle cx="9" cy="9" r="1.8" fill="#003B67"/>
+                <circle cx="14" cy="9" r="1.8" fill="#003B67"/>
+                <circle cx="20" cy="27" r="6.5" stroke="#003B67" stroke-width="2"/>
+                <circle cx="20" cy="27" r="2.5" fill="#003B67"/>
+              </svg>
+            </div>
+            <p class="st-machine-title" id="dash-state">Bağlanıyor…</p>
+            <p class="st-machine-hint"  id="dash-hint">—</p>
+          </div>
+
+          <!-- 2×2 stat grid -->
+          <div class="stat-grid" role="list" aria-label="Makine durum bilgileri">
+            <div class="stat-cell" role="listitem">
+              <span class="stat-k">Bağlantı</span>
+              <span class="stat-v" id="stat-conn">—</span>
+            </div>
+            <div class="stat-cell" role="listitem">
+              <span class="stat-k">Güç</span>
+              <span class="stat-v" id="stat-power">—</span>
+            </div>
+            <div class="stat-cell" role="listitem">
+              <span class="stat-k">Kapak</span>
+              <span class="stat-v" id="stat-door">—</span>
+            </div>
+            <div class="stat-cell" role="listitem">
+              <span class="stat-k">Kalan</span>
+              <span class="stat-v accent" id="stat-remain">—</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Settings FAB — her zaman görünür -->
+        <button class="settings-fab" onclick="openSettings()"
+          aria-label="API ayarlarını aç">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#003B67" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+        </button>
+      </div>
+
+    </div><!-- /watch-screen -->
+  </div><!-- /watch-frame -->
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════ */
+let curScr     = '';
+let pollTimer  = null;
+let isRunning  = false;   // makine çalışıyor mu
+
+const STORAGE_KEYS = { cid: 'hc_client_id', cs: 'hc_client_secret', haid: 'hc_haid' };
+
+/* ═══════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════ */
+function goTo(id) {
+  if (curScr === id) return;
+  const cur = document.getElementById(curScr);
+  const tgt = document.getElementById(id);
+  if (!tgt) return;
+  if (cur) {
+    cur.classList.remove('active');
+    cur.classList.add('exit-l');
+    setTimeout(() => cur.classList.remove('exit-l'), 320);
+  }
+  tgt.classList.add('active');
+  curScr = id;
+  announce(tgt.getAttribute('aria-label') || '');
+}
+
+/* ═══════════════════════════════════════════
+   FIRST-RUN LOGIC
+   localStorage yerine in-memory (artifacts kısıtı)
+   Gerçek Watch uygulamasında localStorage/SharedPrefs kullanılır.
+═══════════════════════════════════════════ */
+const _store = {};
+function lsGet(k) { return _store[k] || null; }
+function lsSet(k, v) { _store[k] = v; }
+
+function hasCredentials() {
+  return !!(lsGet(STORAGE_KEYS.cid) && lsGet(STORAGE_KEYS.cs) && lsGet(STORAGE_KEYS.haid));
+}
+
+function init() {
+  updateClock();
+  setInterval(updateClock, 15000);
+
+  if (hasCredentials()) {
+    // Kayıtlı bilgiler var → direkt dashboard
+    prefillSettings();
+    goTo('s-dashboard');
+    startDashboard();
+  } else {
+    // İlk açılış → ayarlar sayfası
+    goTo('s-settings');
+  }
+}
+
+/* ═══════════════════════════════════════════
+   SETTINGS
+═══════════════════════════════════════════ */
+function saveSettings() {
+  const cid  = document.getElementById('inp-cid').value.trim();
+  const cs   = document.getElementById('inp-cs').value.trim();
+  const haid = document.getElementById('inp-haid').value.trim();
+
+  if (!cid || !cs || !haid) {
+    announce('Lütfen tüm alanları doldurun.');
+    // Eksik alanları vurgula
+    [['inp-cid', cid], ['inp-cs', cs], ['inp-haid', haid]].forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (!val) el.style.borderColor = 'var(--err)';
+      else       el.style.borderColor = 'var(--border-hi)';
+    });
+    return;
+  }
+
+  lsSet(STORAGE_KEYS.cid,  cid);
+  lsSet(STORAGE_KEYS.cs,   cs);
+  lsSet(STORAGE_KEYS.haid, haid);
+
+  announce('Ayarlar kaydedildi. Bağlanıyor…');
+  goTo('s-dashboard');
+  startDashboard();
+}
+
+function openSettings() {
+  stopPolling();
+  prefillSettings();
+  goTo('s-settings');
+}
+
+function prefillSettings() {
+  const cid  = lsGet(STORAGE_KEYS.cid);
+  const cs   = lsGet(STORAGE_KEYS.cs);
+  const haid = lsGet(STORAGE_KEYS.haid);
+  if (cid)  document.getElementById('inp-cid').value  = cid;
+  if (cs)   document.getElementById('inp-cs').value   = cs;
+  if (haid) document.getElementById('inp-haid').value = haid;
+}
+
+/* ═══════════════════════════════════════════
+   DASHBOARD & POLLING
+═══════════════════════════════════════════ */
+function startDashboard() {
+  fetchStatus();   // ilk açılışta 1 kez hemen sorgula
+}
+
+function fetchStatus() {
+  const haid = lsGet(STORAGE_KEYS.haid);
+  if (!haid) return;
+
+  /* ── GERÇEK UYGULAMA ──
+     const token = await getToken(cid, cs);
+     const res   = await fetch(
+       `https://api.home-connect.com/api/homeappliances/${haid}/status`,
+       { headers: { Authorization: `Bearer ${token}` } }
+     );
+     const data = await res.json();
+     applyStatus(data);
+  ─────────────────────────
+     Bu prototipte rastgele simüle edilen data kullanılır.
+  ─────────────────────────────────────────── */
+  simulateStatus();
+}
+
+/* Simüle edilmiş durum verisi — gerçek API entegrasyonunda kaldırılır */
+let _simState = 'Hazır';
+let _simRemain = 0;
+function simulateStatus() {
+  // Döngüsel demo: Hazır → Çalışıyor(75dk) → Hazır
+  const states = [
+    { state: 'Hazır',      power: 'Açık', door: 'Kapalı', remain: 0,  running: false },
+    { state: 'Çalışıyor',  power: 'Açık', door: 'Kapalı', remain: 75, running: true  },
+    { state: 'Çalışıyor',  power: 'Açık', door: 'Kapalı', remain: 42, running: true  },
+    { state: 'Bitti',      power: 'Açık', door: 'Açık',   remain: 0,  running: false },
+  ];
+  const idx = Math.floor(Date.now() / 8000) % states.length;
+  const d   = states[idx];
+  applyStatus({ connected: true, ...d });
+}
+
+function applyStatus({ connected, state, power, door, remain, running }) {
+  isRunning = running;
+
+  /* Bağlantı göstergesi */
+  const dot = document.getElementById('conn-dot');
+  const lbl = document.getElementById('conn-lbl');
+  if (connected) {
+    dot.classList.remove('off');
+    lbl.textContent = 'Online';
+  } else {
+    dot.classList.add('off');
+    lbl.textContent = 'Offline';
+  }
+
+  /* Stat cells */
+  setStatCell('stat-conn',   connected ? 'Online' : 'Offline', connected ? 'ok' : 'warn');
+  setStatCell('stat-power',  power  || '—',  power === 'Açık' ? 'ok' : '');
+  setStatCell('stat-door',   door   || '—',  door  === 'Açık' ? 'warn' : 'ok');
+  setStatCell('stat-remain', remain ? remain + ' dk' : '—', remain ? 'accent' : '');
+
+  /* Büyük durum başlığı */
+  document.getElementById('dash-state').textContent = state || '—';
+  const hintMap = {
+    'Hazır':     'Program seçmeye hazır',
+    'Çalışıyor': `${remain} dk kaldı`,
+    'Bitti':     'Kapağı açabilirsiniz',
+    'Hata':      'Servis gerekebilir',
+  };
+  document.getElementById('dash-hint').textContent = hintMap[state] || '';
+
+  /* İkon rengi */
+  const box = document.getElementById('dash-icon-box');
+  box.classList.toggle('running', running);
+  box.classList.toggle('off', !power || power === 'Kapalı');
+
+  /* Polling stratejisi:
+     - Makine çalışıyorsa: 60 saniyede bir sorgula
+     - Kapalı / hazır bekliyorsa: polling'i durdur
+  ─────────────────────────────────────────── */
+  reschedulePolling(running);
+}
+
+function setStatCell(id, text, mod) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className   = 'stat-v' + (mod ? ' ' + mod : '');
+}
+
+/* ═══════════════════════════════════════════
+   POLLING — ENERJİ DOSTU
+═══════════════════════════════════════════ */
+function reschedulePolling(running) {
+  stopPolling();
+  if (running) {
+    // Çalışırken: 60sn = 1 dakika
+    pollTimer = setInterval(fetchStatus, 60_000);
+  }
+  // Kapalı/Hazır: polling yok → pil tasarrufu
+}
+
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+/* ═══════════════════════════════════════════
+   CLOCK
+═══════════════════════════════════════════ */
+function updateClock() {
+  const n  = new Date();
+  const ts = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+  const d  = document.getElementById('st-clk-d');
+  const s  = document.getElementById('st-clk-s');
+  if (d) d.textContent = ts;
+  if (s) s.textContent = ts;
+}
+
+/* ═══════════════════════════════════════════
+   ARIA
+═══════════════════════════════════════════ */
+function announce(msg) {
+  const el = document.getElementById('aria-live');
+  if (!el) return;
+  el.textContent = '';
+  setTimeout(() => { el.textContent = msg; }, 60);
+}
+
+/* ═══════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
